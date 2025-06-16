@@ -64,12 +64,12 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define SD_CS_Pin GPIO_PIN_1
-#define SD_CS_GPIO_Port GPIOC
+#define SD_CS_Pin GPIO_PIN_10
+#define SD_CS_GPIO_Port GPIOA
+#define SPI1_CS_Pin GPIO_PIN_3
+#define SPI1_CS_GPIO_Port GPIOD
 #define SPI1_RST_Pin GPIO_PIN_3
-#define SPI1_RST_GPIO_Port GPIOA
-#define SPI1_CS_Pin GPIO_PIN_4
-#define SPI1_CS_GPIO_Port GPIOA
+#define SPI1_RST_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 #define SD_SPI_HANDLE hspi2

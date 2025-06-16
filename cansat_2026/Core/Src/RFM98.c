@@ -22,8 +22,9 @@
  * GNU General Public License for more details.
 **/
 /* USER CODE END header */
-#include "RFM98.h"
 #include "main.h"
+#include "stm32g0xx_hal.h"
+#include "RFM98.h"
 #include <string.h>
 #include <stdint.h>
 
