@@ -25,16 +25,14 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "app_fatfs.h"
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "RFM98.h"
 #include "bme280.h"
+#include "nmea_parse.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
-#include "nmea_parse.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -56,14 +54,11 @@
 I2C_HandleTypeDef hi2c2;
 
 UART_HandleTypeDef hlpuart1;
-UART_HandleTypeDef hlpuart2;
-DMA_HandleTypeDef hdma_lpuart2_rx;
+DMA_HandleTypeDef hdma_lpuart1_rx;
 
 SPI_HandleTypeDef hspi1;
 SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
-DMA_HandleTypeDef hdma_spi1_rx;
-DMA_HandleTypeDef hdma_spi2_rx;
 
 /* USER CODE BEGIN PV */
 BME280_HandleTypedef bme280;
@@ -88,12 +83,11 @@ GPS myData;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_I2C2_Init(void);
+static void MX_LPUART1_UART_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_SPI3_Init(void);
-static void MX_LPUART2_UART_Init(void);
-static void MX_LPUART1_UART_Init(void);
+static void MX_I2C2_Init(void);
 /* USER CODE BEGIN PFP */
 void myprintf(const char *fmt, ...);
 /* USER CODE END PFP */
@@ -132,42 +126,17 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_I2C2_Init();
+  MX_LPUART1_UART_Init();
   MX_SPI1_Init();
   MX_SPI2_Init();
   MX_SPI3_Init();
-  MX_LPUART2_UART_Init();
-  MX_LPUART1_UART_Init();
-  if (MX_FATFS_Init() != APP_OK) {
-    Error_Handler();
-  }
+  MX_I2C2_Init();
   /* USER CODE BEGIN 2 */
   bme280.hspi = &hspi3; // Assuming hspi1 is used for BME280
   bme280.cs_port = GPIOB; // Assuming CS pin is on GPIOB
   bme280.cs_pin = GPIO_PIN_6; // Assuming CS pin is PB6
   
   HAL_Delay(1000);
-  
-  FATFS FatFs; 	//Fatfs handle
-  FIL fil; 		//File handle
-  FRESULT fres;
-  
-  fres = f_mount(&FatFs, "", 1); //1=mount now
-  if (fres != FR_OK) {
-    myprintf("f_mount error (%i)\r\n", fres);
-	  while(1);
-  }
-  
-  //Now let's try and write a file "write.txt"
-  fres = f_open(&fil, "write.txt", FA_WRITE | FA_OPEN_ALWAYS | FA_CREATE_ALWAYS);
-  if(fres == FR_OK) {
-    myprintf("I was able to open 'write.txt' for writing\r\n");
-  } else {
-    myprintf("f_open error (%i)\r\n", fres);
-  }
-  
-  BYTE readBuf[20];
-  UINT bytesWrote;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -187,22 +156,7 @@ int main(void)
       free(str);
       RFM98_Transmit((uint8_t *)&str, sizeof(str));
     }
-
-    
-    // Use bme_data.temperature, .pressure, .humidity
-    fres = f_write(&fil, readBuf, sizeof(readBuf), &bytesWrote);
-    f_sync(&fil);
-    if(fres == FR_OK) {
-      myprintf("Wrote %i bytes to 'write.txt'!\r\n", bytesWrote);
-    } else {
-      myprintf("f_write error (%i)\r\n", fres);
-    }
   }
-  //Be a tidy kiwi - don't forget to close your file!
-  f_close(&fil);
-  
-  //We're done, so de-mount the drive
-  f_mount(NULL, "", 0);
   /* USER CODE END 3 */
 }
 
@@ -343,54 +297,6 @@ static void MX_LPUART1_UART_Init(void)
 }
 
 /**
-  * @brief LPUART2 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_LPUART2_UART_Init(void)
-{
-
-  /* USER CODE BEGIN LPUART2_Init 0 */
-
-  /* USER CODE END LPUART2_Init 0 */
-
-  /* USER CODE BEGIN LPUART2_Init 1 */
-
-  /* USER CODE END LPUART2_Init 1 */
-  hlpuart2.Instance = LPUART2;
-  hlpuart2.Init.BaudRate = 209700;
-  hlpuart2.Init.WordLength = UART_WORDLENGTH_7B;
-  hlpuart2.Init.StopBits = UART_STOPBITS_1;
-  hlpuart2.Init.Parity = UART_PARITY_NONE;
-  hlpuart2.Init.Mode = UART_MODE_TX_RX;
-  hlpuart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  hlpuart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  hlpuart2.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  hlpuart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  hlpuart2.FifoMode = UART_FIFOMODE_DISABLE;
-  if (HAL_UART_Init(&hlpuart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetTxFifoThreshold(&hlpuart2, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetRxFifoThreshold(&hlpuart2, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_DisableFifoMode(&hlpuart2) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN LPUART2_Init 2 */
-
-  /* USER CODE END LPUART2_Init 2 */
-
-}
-
-/**
   * @brief SPI1 Initialization Function
   * @param None
   * @retval None
@@ -523,9 +429,6 @@ static void MX_DMA_Init(void)
   /* DMA1_Channel1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Channel1_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Channel1_IRQn);
-  /* DMA1_Channel2_3_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel2_3_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
 
 }
 
@@ -543,19 +446,14 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOF_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(SD_CS_GPIO_Port, SD_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_CS_GPIO_Port, SPI1_CS_Pin, GPIO_PIN_RESET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_RST_GPIO_Port, SPI1_RST_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, SPI1_RST_Pin|SPI1_CS_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : SD_CS_Pin */
   GPIO_InitStruct.Pin = SD_CS_Pin;
@@ -564,19 +462,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SD_CS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : SPI1_CS_Pin */
-  GPIO_InitStruct.Pin = SPI1_CS_Pin;
+  /*Configure GPIO pins : SPI1_RST_Pin SPI1_CS_Pin */
+  GPIO_InitStruct.Pin = SPI1_RST_Pin|SPI1_CS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(SPI1_CS_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : SPI1_RST_Pin */
-  GPIO_InitStruct.Pin = SPI1_RST_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(SPI1_RST_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
   
@@ -612,8 +503,8 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
     newPos = Size+oldPos; //update buffer position
 
   }
-  HAL_UARTEx_ReceiveToIdle_DMA(&hlpuart2, (uint8_t *)RxBuffer, RxBuffer_SIZE); //re-enable the DMA interrupt
-  __HAL_DMA_DISABLE_IT(&hdma_lpuart2_rx, DMA_IT_HT); //disable the half transfer interrupt
+  HAL_UARTEx_ReceiveToIdle_DMA(huart, (uint8_t *)RxBuffer, RxBuffer_SIZE); //re-enable the DMA interrupt
+  __HAL_DMA_DISABLE_IT(&hdma_lpuart1_rx, DMA_IT_HT); //disable the half transfer interrupt
 }
 /* USER CODE END 4 */
 

@@ -18,7 +18,7 @@ int gps_checksum(char *nmea_data)
   int i;
 
   //exclude the CRLF plus CRC with an * from the end
-  for (i = 0; i < strlen(nmea_data) - 5; i ++) {
+  for (i = 0; i < (int)strlen(nmea_data) - 5; i ++) {
     crc ^= nmea_data[i];
   }
   int receivedHash = strtol(recv_crc, NULL, 16);
@@ -165,7 +165,7 @@ int nmea_GPGLL(GPS *gps_data, char*inputString) {
 
 void nmea_parse(GPS *gps_data, uint8_t *buffer){
   memset(data, 0, sizeof(data));
-  char * token = strtok(buffer, "$");
+  char * token = strtok((char*)buffer, "$");
   int cnt = 0;
   while(token !=NULL){
     data[cnt++] = malloc(strlen(token)+1); //free later!!!!!
