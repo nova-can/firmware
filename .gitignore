@@ -1,4 +1,5 @@
 # === General ===
+*.s
 *.swp
 *.swo
 *.swn
@@ -10,13 +11,14 @@
 Thumbs.db
 
 # === Build Directories ===
-/build/
-/Build/
-/CMakeFiles/
-/CMakeCache.txt
-/cmake-build-*/
-/Makefile
-/install_manifest.txt
+*/build/
+*/Build/
+*/CMakeFiles/
+*/CMakeCache.txt
+*/cmake-build-*/
+*/Makefile
+*/install_manifest.txt
+*/cmake/
 
 # === STM32CubeMX Generated Files ===
 /*.ioc
@@ -71,9 +73,10 @@ Thumbs.db
 *.tmp
 *.user
 *.orig
+*.ld
 
 # === CMake User Presets ===
-CMakeUserPresets.json
+*/CMakePresets.json
 
 # === VS Code ===
 .vscode/
@@ -89,10 +92,8 @@ nova-can_2026/Drivers/
 nova-can_2026/EWARM/
 nova-can_2026/Middlewares/
 
-cansat_2026/
-
+=
 # Uncomment below if you want to exclude CubeMX auto-generated code,
 # but keep in mind you’ll need the .ioc file to regenerate them.
 # Be careful not to ignore your own application code.
-
 
